@@ -1,5 +1,7 @@
 package com.john.minhasfinancas.model.repository;
 
+import java.util.Optional;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,36 +20,65 @@ import com.john.minhasfinancas.model.entity.Usuario;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 public class UsuarioRepositoryTest {
-	
+
 	@Autowired
 	UsuarioRepository repository;
-	
+
 	@Autowired
 	TestEntityManager entityManager;
 
 	@Test
-	public void deveVerificarAExixtenciaDeUmEmail() {
-		//cenario
-		Usuario usuario = Usuario.builder().nome("usuario").email("usuario@email.com").build();
+	public void deveVerificarAExistenciaDeUmEmail() {
+		// cenario
+		Usuario usuario = criarUsuario();
 		entityManager.persist(usuario);
-		
-		//ação/execucao
+
+		// ação/execucao
 		boolean result = repository.existsByEmail("usuario@email.com");
-		
-		//verificacao
+
+		// verificacao
 		Assertions.assertTrue(result);
 	}
-	
-	
+
 	@Test
 	public void deveRetornarFalsoQuandoNaoHouverUsuarioCadastradoComOEmail() {
-		//cenario
-		
-		//ação
+		// ação
 		boolean result = repository.existsByEmail("usuario@email.com");
-		
-		//verificacao
+
+		// verificacao
 		Assertions.assertFalse(result);
+
+	}
+
+	@Test
+	public void devePersistirUmUsuarioNaBasedeDados() {
+		// cenario
+		Usuario usuario = criarUsuario();
+		// ação
+		Usuario usuarioSalvo = repository.save(usuario);
+		// verificacao
+		Assertions.assertNotNull(usuarioSalvo.getId());
+	}
+
+	@Test
+	public void deveBuscarUmUsuarioPorEmail() {
+		// cenario
+		Usuario usuario = criarUsuario();
+		entityManager.persist(usuario);
+		// Verificacao
 		
+		Optional<Usuario> result =repository.findByEmail("usuario@email.com");
+		Assertions.assertTrue(result.isPresent());
+	}
+	
+	@Test
+	public void deveRetornarVazioAoBuscarUmUsuarioPorEmailQuandoNaoExisteNaBase() {
+		// Verificacao
+		Optional<Usuario> result =repository.findByEmail("usuario@email.com");
+		Assertions.assertFalse(result.isPresent());
+	}
+	
+	public static Usuario criarUsuario() {
+		return Usuario.builder().nome("usuario").senha("senha").email("usuario@email.com").build(); 
 	}
 }
