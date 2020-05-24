@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.john.minhasfinancas.exception.ErroAutenticacao;
 import com.john.minhasfinancas.exception.RegraNegocioException;
@@ -37,6 +38,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 	}
 
 	@Override
+	@Transactional
 	public Usuario salvarUsuario(Usuario usuario) {
 		validarEmail(usuario.getEmail());
 		return repository.save(usuario);
