@@ -1,7 +1,9 @@
 package com.john.minhasfinancas.service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.Assertions;
@@ -16,6 +18,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.john.minhasfinancas.exception.RegraNegocioException;
 import com.john.minhasfinancas.model.entity.Lancamento;
+import com.john.minhasfinancas.model.entity.Usuario;
 import com.john.minhasfinancas.model.enums.StatusLancamento;
 import com.john.minhasfinancas.model.repository.LancamentoRepository;
 import com.john.minhasfinancas.model.repository.LancamentoRepositoryTest;
@@ -82,7 +85,7 @@ public class LancamentoServiceTest {
 		Mockito.verify(repository, Mockito.times(1)).save(lancamentoSalvo);
 
 	}
-	
+
 	@Test
 	public void deveLancarErroAoTentarAtualizarUmLancamentoQueAindaNaoFoiSalvo() {
 		// cenario
@@ -95,65 +98,151 @@ public class LancamentoServiceTest {
 
 	@Test
 	public void deveDeletarUmLancamento() {
-		//cenario
+		// cenario
 		Lancamento lancamento = LancamentoRepositoryTest.criarlancamento();
 		lancamento.setId(1l);
-		
-		//acao
+
+		// acao
 		service.deletar(lancamento);
-		
-		//verificacao
+
+		// verificacao
 		Mockito.verify(repository).delete(lancamento);
-		
+
 	}
-	
+
 	@Test
 	public void deveLancarErroAoTentarDeletarUmLancamentoQueAindaNaoFoiSalvo() {
-		//cenario
+		// cenario
 		Lancamento lancamento = LancamentoRepositoryTest.criarlancamento();
-		
-		//acao
+
+		// acao
 		Assertions.assertThrows(NullPointerException.class, () -> service.deletar(lancamento));
-		
-		//verificacao
+
+		// verificacao
 		Mockito.verify(repository, Mockito.never()).delete(lancamento);
 	}
-	
+
 	@Test
 	public void deveFiltrarLancamentos() {
-		//cenario
+		// cenario
 		Lancamento lancamento = LancamentoRepositoryTest.criarlancamento();
 		lancamento.setId(1l);
-		
+
 		List<Lancamento> lista = new ArrayList<Lancamento>();
-		lista.add(lancamento);	
-		
+		lista.add(lancamento);
+
 		Mockito.when(repository.findAll(Mockito.any(Example.class))).thenReturn(lista);
-		
-		//acao
+
+		// acao
 		List<Lancamento> resultado = service.buscar(lancamento);
-		
-		//verificacao
+
+		// verificacao
 		Assertions.assertNotNull(resultado);
 	}
-	
+
 	@Test
 	public void deveAtualizarOStatusDeUmLancamento() {
-		//cenario
+		// cenario
 		Lancamento lancamento = LancamentoRepositoryTest.criarlancamento();
 		lancamento.setId(1l);
 		lancamento.setStatus(StatusLancamento.PENDENTE);
-		
+
 		StatusLancamento novoStatus = StatusLancamento.EFETIVADO;
 		Mockito.doReturn(lancamento).when(service).atualizar(lancamento);
-		
+
 		// acao
 		service.atuaizarStatus(lancamento, novoStatus);
-		
-		//verificacao
+
+		// verificacao
 		Assertions.assertEquals(lancamento.getStatus(), novoStatus);
 		Mockito.verify(service).atualizar(lancamento);
 	}
+
+	@Test
+	public void obterUmLancamentoPorId() {
+		// cenario
+		Long id = 1l;
+		Lancamento lancamento = LancamentoRepositoryTest.criarlancamento();
+		lancamento.setId(id);
+		
+		Mockito.when(repository.findById(id)).thenReturn(Optional.of(lancamento));
+		
+		//acao
+		Optional<Lancamento> resultado = service.obterPorId(id);
+		
+		//verificacao
+		Assertions.assertTrue(resultado.isPresent());
+	}
 	
+	@Test
+	public void deveRetornarVazioQuandoOLancamentoNaoExiste() {
+		// cenario
+		Long id = 1l;
+		Lancamento lancamento = LancamentoRepositoryTest.criarlancamento();
+		lancamento.setId(id);
+		
+		Mockito.when(repository.findById(id)).thenReturn(Optional.empty());
+		
+		//acao
+		Optional<Lancamento> resultado = service.obterPorId(id);
+		
+		//verificacao
+		Assertions.assertFalse(resultado.isPresent());
+	}
 	
+	@Test
+	public void deveLancarErrosAoValidarLancamento() {
+		Lancamento lancamento = new Lancamento();
+		
+		//NULL
+		Assertions.assertThrows(RegraNegocioException.class, () -> service.validar(lancamento), "Informe uma Descricão válida.");
+		
+		lancamento.setDescricao("");
+		
+		Assertions.assertThrows(RegraNegocioException.class, () -> service.validar(lancamento), "Informe uma Descricão válida.");
+		
+		lancamento.setDescricao("Salario");
+		
+		//NULLL
+		Assertions.assertThrows(RegraNegocioException.class, () -> service.validar(lancamento), "Informe um Mês válido.");
+		
+		lancamento.setMes(0);
+		
+		Assertions.assertThrows(RegraNegocioException.class, () -> service.validar(lancamento), "Informe um Mês válido.");
+		
+		lancamento.setMes(1);
+		
+		//NULL
+		Assertions.assertThrows(RegraNegocioException.class, () -> service.validar(lancamento), "Informe um Ano válido.");
+		
+		lancamento.setAno(20);
+		
+		Assertions.assertThrows(RegraNegocioException.class, () -> service.validar(lancamento), "Informe um Ano válido.");
+		
+		lancamento.setAno(2020);
+		
+		//NULL
+		Assertions.assertThrows(RegraNegocioException.class, () -> service.validar(lancamento), "Informe um Usuário válido.");
+		
+		lancamento.setUsuario(new Usuario());
+		
+		Assertions.assertThrows(RegraNegocioException.class, () -> service.validar(lancamento), "Informe um Usuário válido.");
+		
+		lancamento.setUsuario(new Usuario());
+		lancamento.getUsuario().setId(1l);
+		
+		//NULL
+		Assertions.assertThrows(RegraNegocioException.class, () -> service.validar(lancamento), "Informe um Valor válido.");
+		
+		lancamento.setValor(BigDecimal.ZERO);
+		
+		Assertions.assertThrows(RegraNegocioException.class, () -> service.validar(lancamento), "Informe um Valor válido.");
+		
+		lancamento.setValor(BigDecimal.valueOf(100));
+		
+		//NULL
+		Assertions.assertThrows(RegraNegocioException.class, () -> service.validar(lancamento), "Informe um Tipo válido.");
+		
+	}
+
 }
